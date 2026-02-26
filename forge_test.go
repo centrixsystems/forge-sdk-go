@@ -124,6 +124,81 @@ func TestNoQuantize(t *testing.T) {
 	}
 }
 
+func TestPdfOptionsPayload(t *testing.T) {
+	c := NewClient("http://localhost:3000")
+	r := c.RenderHTML("<h1>Report</h1>").
+		PdfTitle("Annual Report").
+		PdfAuthor("Centrix Systems").
+		PdfSubject("Financial Summary").
+		PdfKeywords("finance,report,2026").
+		PdfCreator("Forge SDK").
+		PdfBookmarks(true)
+
+	p := r.buildPayload()
+	pdf, ok := p["pdf"].(map[string]any)
+	if !ok {
+		t.Fatal("pdf not present")
+	}
+	if pdf["title"] != "Annual Report" {
+		t.Errorf("title = %v", pdf["title"])
+	}
+	if pdf["author"] != "Centrix Systems" {
+		t.Errorf("author = %v", pdf["author"])
+	}
+	if pdf["subject"] != "Financial Summary" {
+		t.Errorf("subject = %v", pdf["subject"])
+	}
+	if pdf["keywords"] != "finance,report,2026" {
+		t.Errorf("keywords = %v", pdf["keywords"])
+	}
+	if pdf["creator"] != "Forge SDK" {
+		t.Errorf("creator = %v", pdf["creator"])
+	}
+	if pdf["bookmarks"] != true {
+		t.Errorf("bookmarks = %v", pdf["bookmarks"])
+	}
+}
+
+func TestPdfPartialOptions(t *testing.T) {
+	c := NewClient("http://localhost:3000")
+	r := c.RenderHTML("<h1>Test</h1>").
+		PdfTitle("My Title").
+		PdfBookmarks(false)
+
+	p := r.buildPayload()
+	pdf, ok := p["pdf"].(map[string]any)
+	if !ok {
+		t.Fatal("pdf not present")
+	}
+	if pdf["title"] != "My Title" {
+		t.Errorf("title = %v", pdf["title"])
+	}
+	if pdf["bookmarks"] != false {
+		t.Errorf("bookmarks = %v", pdf["bookmarks"])
+	}
+	if _, ok := pdf["author"]; ok {
+		t.Error("author should not be present")
+	}
+	if _, ok := pdf["subject"]; ok {
+		t.Error("subject should not be present")
+	}
+	if _, ok := pdf["keywords"]; ok {
+		t.Error("keywords should not be present")
+	}
+	if _, ok := pdf["creator"]; ok {
+		t.Error("creator should not be present")
+	}
+}
+
+func TestNoPdf(t *testing.T) {
+	c := NewClient("http://localhost:3000")
+	r := c.RenderHTML("<p>test</p>").Format(FormatPDF)
+	p := r.buildPayload()
+	if _, ok := p["pdf"]; ok {
+		t.Error("pdf should not be present when no pdf options set")
+	}
+}
+
 func TestTrailingSlash(t *testing.T) {
 	c := NewClient("http://localhost:3000/")
 	if c.baseURL != "http://localhost:3000" {

@@ -97,6 +97,12 @@ type RenderRequest struct {
 	colors      *int
 	palette     any
 	dither      *string
+	pdfTitle    *string
+	pdfAuthor   *string
+	pdfSubject  *string
+	pdfKeywords *string
+	pdfCreator  *string
+	pdfBookmarks *bool
 }
 
 // Format sets the output format (default: "pdf").
@@ -187,6 +193,42 @@ func (r *RenderRequest) Dither(method DitherMethod) *RenderRequest {
 	return r
 }
 
+// PdfTitle sets the PDF document title metadata.
+func (r *RenderRequest) PdfTitle(title string) *RenderRequest {
+	r.pdfTitle = &title
+	return r
+}
+
+// PdfAuthor sets the PDF document author metadata.
+func (r *RenderRequest) PdfAuthor(author string) *RenderRequest {
+	r.pdfAuthor = &author
+	return r
+}
+
+// PdfSubject sets the PDF document subject metadata.
+func (r *RenderRequest) PdfSubject(subject string) *RenderRequest {
+	r.pdfSubject = &subject
+	return r
+}
+
+// PdfKeywords sets the PDF document keywords metadata (comma-separated).
+func (r *RenderRequest) PdfKeywords(keywords string) *RenderRequest {
+	r.pdfKeywords = &keywords
+	return r
+}
+
+// PdfCreator sets the PDF document creator metadata.
+func (r *RenderRequest) PdfCreator(creator string) *RenderRequest {
+	r.pdfCreator = &creator
+	return r
+}
+
+// PdfBookmarks enables or disables PDF bookmarks from headings.
+func (r *RenderRequest) PdfBookmarks(enabled bool) *RenderRequest {
+	r.pdfBookmarks = &enabled
+	return r
+}
+
 // buildPayload builds the JSON payload map.
 func (r *RenderRequest) buildPayload() map[string]any {
 	p := map[string]any{}
@@ -244,6 +286,30 @@ func (r *RenderRequest) buildPayload() map[string]any {
 			q["dither"] = *r.dither
 		}
 		p["quantize"] = q
+	}
+
+	if r.pdfTitle != nil || r.pdfAuthor != nil || r.pdfSubject != nil ||
+		r.pdfKeywords != nil || r.pdfCreator != nil || r.pdfBookmarks != nil {
+		pdf := map[string]any{}
+		if r.pdfTitle != nil {
+			pdf["title"] = *r.pdfTitle
+		}
+		if r.pdfAuthor != nil {
+			pdf["author"] = *r.pdfAuthor
+		}
+		if r.pdfSubject != nil {
+			pdf["subject"] = *r.pdfSubject
+		}
+		if r.pdfKeywords != nil {
+			pdf["keywords"] = *r.pdfKeywords
+		}
+		if r.pdfCreator != nil {
+			pdf["creator"] = *r.pdfCreator
+		}
+		if r.pdfBookmarks != nil {
+			pdf["bookmarks"] = *r.pdfBookmarks
+		}
+		p["pdf"] = pdf
 	}
 
 	return p

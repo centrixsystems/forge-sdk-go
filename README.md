@@ -84,6 +84,24 @@ img, err := client.RenderHTML("<h1>Brand</h1>").
 	Send(ctx)
 ```
 
+### PDF Metadata
+
+Set PDF document properties and enable bookmarks.
+
+```go
+pdf, err := client.RenderHTML("<h1>Annual Report</h1><p>Contents...</p>").
+	Format(forge.FormatPDF).
+	Paper("a4").
+	Flow(forge.FlowPaginate).
+	PdfTitle("Annual Report 2026").
+	PdfAuthor("Centrix Systems").
+	PdfSubject("Financial Summary").
+	PdfKeywords("finance,report,annual").
+	PdfCreator("Forge SDK").
+	PdfBookmarks(true).
+	Send(ctx)
+```
+
 ### Custom Client Configuration
 
 ```go
@@ -145,6 +163,12 @@ All methods return `*RenderRequest` for chaining. Call `.Send(ctx)` to execute.
 | `Palette` | `Palette` | Built-in color palette preset |
 | `CustomPalette` | `[]string` | Array of hex color strings |
 | `Dither` | `DitherMethod` | Dithering algorithm |
+| `PdfTitle` | `string` | PDF document title metadata |
+| `PdfAuthor` | `string` | PDF document author metadata |
+| `PdfSubject` | `string` | PDF document subject metadata |
+| `PdfKeywords` | `string` | PDF keywords metadata (comma-separated) |
+| `PdfCreator` | `string` | PDF creator application metadata |
+| `PdfBookmarks` | `bool` | Enable PDF bookmarks from headings |
 
 | Terminal Method | Returns | Description |
 |-----------------|---------|-------------|
