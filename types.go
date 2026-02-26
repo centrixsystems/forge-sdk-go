@@ -48,6 +48,35 @@ const (
 	WatermarkUnder WatermarkLayer = "under"
 )
 
+// PdfStandard represents a PDF standard compliance level.
+type PdfStandard string
+
+const (
+	PdfStandardNone PdfStandard = "none"
+	PdfStandardA2B  PdfStandard = "pdf/a-2b"
+	PdfStandardA3B  PdfStandard = "pdf/a-3b"
+)
+
+// EmbedRelationship represents the relationship of an embedded file to the PDF.
+type EmbedRelationship string
+
+const (
+	EmbedRelationshipAlternative EmbedRelationship = "alternative"
+	EmbedRelationshipSupplement  EmbedRelationship = "supplement"
+	EmbedRelationshipData        EmbedRelationship = "data"
+	EmbedRelationshipSource      EmbedRelationship = "source"
+	EmbedRelationshipUnspecified EmbedRelationship = "unspecified"
+)
+
+// EmbeddedFile represents a file to embed in the PDF.
+type EmbeddedFile struct {
+	Path         string
+	Data         string // base64-encoded
+	MimeType     string
+	Description  string
+	Relationship EmbedRelationship
+}
+
 // Palette specifies a built-in color palette preset.
 type Palette string
 

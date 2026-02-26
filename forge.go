@@ -111,6 +111,8 @@ type RenderRequest struct {
 	pdfWatermarkFontSize *float64
 	pdfWatermarkScale    *float64
 	pdfWatermarkLayer    *string
+	pdfStandard          *PdfStandard
+	pdfEmbeddedFiles     []EmbeddedFile
 }
 
 // Format sets the output format (default: "pdf").
@@ -286,6 +288,22 @@ func (r *RenderRequest) PdfWatermarkLayer(layer WatermarkLayer) *RenderRequest {
 	return r
 }
 
+// PdfStandard sets the PDF standard compliance level.
+func (r *RenderRequest) PdfStandard(standard PdfStandard) *RenderRequest {
+	r.pdfStandard = &standard
+	return r
+}
+
+// PdfAttach adds an embedded file to the PDF. Data must be base64-encoded.
+func (r *RenderRequest) PdfAttach(path, data string, opts ...func(*EmbeddedFile)) *RenderRequest {
+	ef := EmbeddedFile{Path: path, Data: data}
+	for _, opt := range opts {
+		opt(&ef)
+	}
+	r.pdfEmbeddedFiles = append(r.pdfEmbeddedFiles, ef)
+	return r
+}
+
 // buildPayload builds the JSON payload map.
 func (r *RenderRequest) buildPayload() map[string]any {
 	p := map[string]any{}
@@ -351,7 +369,8 @@ func (r *RenderRequest) buildPayload() map[string]any {
 		r.pdfWatermarkScale != nil || r.pdfWatermarkLayer != nil
 
 	if r.pdfTitle != nil || r.pdfAuthor != nil || r.pdfSubject != nil ||
-		r.pdfKeywords != nil || r.pdfCreator != nil || r.pdfBookmarks != nil || hasWatermark {
+		r.pdfKeywords != nil || r.pdfCreator != nil || r.pdfBookmarks != nil || hasWatermark ||
+		r.pdfStandard != nil || len(r.pdfEmbeddedFiles) > 0 {
 		pdf := map[string]any{}
 		if r.pdfTitle != nil {
 			pdf["title"] = *r.pdfTitle
@@ -398,6 +417,29 @@ func (r *RenderRequest) buildPayload() map[string]any {
 				wm["layer"] = *r.pdfWatermarkLayer
 			}
 			pdf["watermark"] = wm
+		}
+		if r.pdfStandard != nil {
+			pdf["standard"] = string(*r.pdfStandard)
+		}
+		if len(r.pdfEmbeddedFiles) > 0 {
+			files := make([]map[string]interface{}, len(r.pdfEmbeddedFiles))
+			for i, ef := range r.pdfEmbeddedFiles {
+				f := map[string]interface{}{
+					"path": ef.Path,
+					"data": ef.Data,
+				}
+				if ef.MimeType != "" {
+					f["mime_type"] = ef.MimeType
+				}
+				if ef.Description != "" {
+					f["description"] = ef.Description
+				}
+				if ef.Relationship != "" {
+					f["relationship"] = string(ef.Relationship)
+				}
+				files[i] = f
+			}
+			pdf["embedded_files"] = files
 		}
 		p["pdf"] = pdf
 	}

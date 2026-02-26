@@ -192,6 +192,8 @@ All methods return `*RenderRequest` for chaining. Call `.Send(ctx)` to execute.
 | `PdfWatermarkFontSize` | `float64` | Watermark font size in PDF points (default: auto) |
 | `PdfWatermarkScale` | `float64` | Watermark image scale (0.0-1.0, default: 0.5) |
 | `PdfWatermarkLayer` | `WatermarkLayer` | Layer position: `WatermarkOver` or `WatermarkUnder` |
+| `PdfStandard` | `PdfStandard` | PDF standard: `PdfStandardNone`, `PdfStandardA2B`, `PdfStandardA3B` |
+| `PdfAttach` | `path, data string, opts...` | Embed file in PDF (base64 data) |
 
 | Terminal Method | Returns | Description |
 |-----------------|---------|-------------|
@@ -207,6 +209,8 @@ All methods return `*RenderRequest` for chaining. Call `.Send(ctx)` to execute.
 | `DitherMethod` | `DitherNone`, `DitherFloydSteinberg`, `DitherAtkinson`, `DitherOrdered` |
 | `Palette` | `PaletteAuto`, `PaletteBlackWhite`, `PaletteGrayscale`, `PaletteEink` |
 | `WatermarkLayer` | `WatermarkOver`, `WatermarkUnder` |
+| `PdfStandard` | `PdfStandardNone`, `PdfStandardA2B`, `PdfStandardA3B` |
+| `EmbedRelationship` | `EmbedRelationshipAlternative`, `EmbedRelationshipSupplement`, `EmbedRelationshipData`, `EmbedRelationshipSource`, `EmbedRelationshipUnspecified` |
 
 ### Errors
 
