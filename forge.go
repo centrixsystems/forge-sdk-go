@@ -73,7 +73,7 @@ func (c *Client) Health(ctx context.Context) (bool, error) {
 	}
 	resp, err := c.httpClient.Do(req)
 	if err != nil {
-		return false, nil
+		return false, &ConnectionError{Cause: err}
 	}
 	defer resp.Body.Close()
 	return resp.StatusCode == http.StatusOK, nil
@@ -95,7 +95,7 @@ type RenderRequest struct {
 	background  *string
 	timeout     *int
 	colors      *int
-	palette     interface{}
+	palette     any
 	dither      *string
 }
 
@@ -187,9 +187,9 @@ func (r *RenderRequest) Dither(method DitherMethod) *RenderRequest {
 	return r
 }
 
-// BuildPayload builds the JSON payload map. Exported for testing.
-func (r *RenderRequest) BuildPayload() map[string]interface{} {
-	p := map[string]interface{}{}
+// buildPayload builds the JSON payload map.
+func (r *RenderRequest) buildPayload() map[string]any {
+	p := map[string]any{}
 
 	if r.html != nil {
 		p["html"] = *r.html
@@ -233,7 +233,7 @@ func (r *RenderRequest) BuildPayload() map[string]interface{} {
 	}
 
 	if r.colors != nil || r.palette != nil || r.dither != nil {
-		q := map[string]interface{}{}
+		q := map[string]any{}
 		if r.colors != nil {
 			q["colors"] = *r.colors
 		}
@@ -251,7 +251,7 @@ func (r *RenderRequest) BuildPayload() map[string]interface{} {
 
 // Send executes the render request and returns the raw output bytes.
 func (r *RenderRequest) Send(ctx context.Context) ([]byte, error) {
-	payload := r.BuildPayload()
+	payload := r.buildPayload()
 
 	body, err := json.Marshal(payload)
 	if err != nil {

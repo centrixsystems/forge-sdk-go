@@ -7,7 +7,7 @@ import (
 func TestMinimalHTMLPayload(t *testing.T) {
 	c := NewClient("http://localhost:3000")
 	r := c.RenderHTML("<h1>Hi</h1>")
-	p := r.BuildPayload()
+	p := r.buildPayload()
 
 	if p["html"] != "<h1>Hi</h1>" {
 		t.Errorf("html = %v, want <h1>Hi</h1>", p["html"])
@@ -37,7 +37,7 @@ func TestURLPayloadWithOptions(t *testing.T) {
 		Background("#ffffff").
 		Timeout(60)
 
-	p := r.BuildPayload()
+	p := r.buildPayload()
 
 	if _, ok := p["html"]; ok {
 		t.Error("html should not be present")
@@ -76,8 +76,8 @@ func TestQuantizePayload(t *testing.T) {
 		Palette(PaletteAuto).
 		Dither(DitherFloydSteinberg)
 
-	p := r.BuildPayload()
-	q, ok := p["quantize"].(map[string]interface{})
+	p := r.buildPayload()
+	q, ok := p["quantize"].(map[string]any)
 	if !ok {
 		t.Fatal("quantize not present")
 	}
@@ -98,8 +98,8 @@ func TestCustomPalette(t *testing.T) {
 		CustomPalette([]string{"#000000", "#ffffff", "#ff0000"}).
 		Dither(DitherAtkinson)
 
-	p := r.BuildPayload()
-	q, ok := p["quantize"].(map[string]interface{})
+	p := r.buildPayload()
+	q, ok := p["quantize"].(map[string]any)
 	if !ok {
 		t.Fatal("quantize not present")
 	}
@@ -118,7 +118,7 @@ func TestCustomPalette(t *testing.T) {
 func TestNoQuantize(t *testing.T) {
 	c := NewClient("http://localhost:3000")
 	r := c.RenderHTML("<p>test</p>").Format(FormatPNG)
-	p := r.BuildPayload()
+	p := r.buildPayload()
 	if _, ok := p["quantize"]; ok {
 		t.Error("quantize should not be present")
 	}
