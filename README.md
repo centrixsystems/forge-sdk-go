@@ -39,6 +39,18 @@ func main() {
 
 ## Usage
 
+### Render HTML to PDF
+
+```go
+pdf, err := client.RenderHTML("<h1>Hello</h1>").
+	Format(forge.FormatPDF).
+	Paper("a4").
+	Orientation(forge.Portrait).
+	Margins("25.4,25.4,25.4,25.4").
+	Flow(forge.FlowPaginate).
+	Send(ctx)
+```
+
 ### Render URL to PNG
 
 ```go
@@ -46,10 +58,13 @@ png, err := client.RenderURL("https://example.com").
 	Format(forge.FormatPNG).
 	Width(1280).
 	Height(800).
+	Density(2.0).
 	Send(ctx)
 ```
 
 ### Color Quantization
+
+Reduce colors for e-ink displays or limited-palette output.
 
 ```go
 eink, err := client.RenderHTML("<h1>Dashboard</h1>").
@@ -59,11 +74,28 @@ eink, err := client.RenderHTML("<h1>Dashboard</h1>").
 	Send(ctx)
 ```
 
-### Custom Timeout
+### Custom Palette
 
 ```go
+img, err := client.RenderHTML("<h1>Brand</h1>").
+	Format(forge.FormatPNG).
+	CustomPalette([]string{"#000000", "#ffffff", "#ff0000"}).
+	Dither(forge.DitherAtkinson).
+	Send(ctx)
+```
+
+### Custom Client Configuration
+
+```go
+import "time"
+
 client := forge.NewClient("http://forge:3000",
-	forge.WithTimeout(120 * time.Second),
+	forge.WithTimeout(5 * time.Minute),
+)
+
+// Or bring your own http.Client
+client := forge.NewClient("http://forge:3000",
+	forge.WithHTTPClient(myHTTPClient),
 )
 ```
 
@@ -73,22 +105,72 @@ client := forge.NewClient("http://forge:3000",
 ok, err := client.Health(ctx)
 ```
 
+Returns `(true, nil)` when the server is healthy, `(false, *ConnectionError)` when the server is unreachable.
+
 ## API Reference
 
-### Types
+### `Client`
 
-```go
-type OutputFormat string  // FormatPDF, FormatPNG, FormatJPEG, FormatBMP, FormatTGA, FormatQOI, FormatSVG
-type Orientation string   // Portrait, Landscape
-type Flow string          // FlowAuto, FlowPaginate, FlowContinuous
-type DitherMethod string  // DitherNone, DitherFloydSteinberg, DitherAtkinson, DitherOrdered
-type Palette string       // PaletteAuto, PaletteBlackWhite, PaletteGrayscale, PaletteEink
-```
+| Function / Method | Description |
+|--------------------|-------------|
+| `NewClient(baseURL, ...Option)` | Create a client (default 120s timeout) |
+| `client.RenderHTML(html)` | Start a render request from an HTML string |
+| `client.RenderURL(url)` | Start a render request from a URL |
+| `client.Health(ctx)` | Check server health |
+
+### Options
+
+| Function | Description |
+|----------|-------------|
+| `WithTimeout(d)` | Set HTTP request timeout (`time.Duration`) |
+| `WithHTTPClient(hc)` | Use a custom `*http.Client` |
+
+### `RenderRequest`
+
+All methods return `*RenderRequest` for chaining. Call `.Send(ctx)` to execute.
+
+| Method | Type | Description |
+|--------|------|-------------|
+| `Format` | `OutputFormat` | Output format (default: `FormatPDF`) |
+| `Width` | `int` | Viewport width in CSS pixels |
+| `Height` | `int` | Viewport height in CSS pixels |
+| `Paper` | `string` | Paper size: a3, a4, a5, b4, b5, letter, legal, ledger |
+| `Orientation` | `Orientation` | `Portrait` or `Landscape` |
+| `Margins` | `string` | Preset (`default`, `none`, `narrow`) or `"T,R,B,L"` in mm |
+| `Flow` | `Flow` | `FlowAuto`, `FlowPaginate`, or `FlowContinuous` |
+| `Density` | `float64` | Output DPI (default: 96) |
+| `Background` | `string` | CSS background color (e.g. `"#ffffff"`) |
+| `Timeout` | `int` | Page load timeout in seconds |
+| `Colors` | `int` | Quantization color count (2-256) |
+| `Palette` | `Palette` | Built-in color palette preset |
+| `CustomPalette` | `[]string` | Array of hex color strings |
+| `Dither` | `DitherMethod` | Dithering algorithm |
+
+| Terminal Method | Returns | Description |
+|-----------------|---------|-------------|
+| `Send(ctx)` | `([]byte, error)` | Execute the render request |
+
+### Type Constants
+
+| Type | Constants |
+|------|----------|
+| `OutputFormat` | `FormatPDF`, `FormatPNG`, `FormatJPEG`, `FormatBMP`, `FormatTGA`, `FormatQOI`, `FormatSVG` |
+| `Orientation` | `Portrait`, `Landscape` |
+| `Flow` | `FlowAuto`, `FlowPaginate`, `FlowContinuous` |
+| `DitherMethod` | `DitherNone`, `DitherFloydSteinberg`, `DitherAtkinson`, `DitherOrdered` |
+| `Palette` | `PaletteAuto`, `PaletteBlackWhite`, `PaletteGrayscale`, `PaletteEink` |
 
 ### Errors
 
-- `*ServerError` — 4xx/5xx server responses (has `StatusCode` and `Message`)
-- `*ConnectionError` — network/connection failures (wraps cause)
+| Type | Fields | Description |
+|------|--------|-------------|
+| `*ServerError` | `StatusCode int`, `Message string` | Server returned 4xx/5xx |
+| `*ConnectionError` | `Cause error` | Network failure (implements `Unwrap()`) |
+
+## Requirements
+
+- Go 1.21+
+- A running [Forge](https://github.com/centrixsystems/forge) server
 
 ## License
 
