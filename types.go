@@ -77,6 +77,42 @@ type EmbeddedFile struct {
 	Relationship EmbedRelationship
 }
 
+// BarcodeType specifies the barcode symbology.
+type BarcodeType string
+
+const (
+	BarcodeQR      BarcodeType = "qr"
+	BarcodeCode128 BarcodeType = "code128"
+	BarcodeEAN13   BarcodeType = "ean13"
+	BarcodeUPCA    BarcodeType = "upca"
+	BarcodeCode39  BarcodeType = "code39"
+)
+
+// BarcodeAnchor specifies the corner anchor for barcode positioning.
+type BarcodeAnchor string
+
+const (
+	AnchorTopLeft     BarcodeAnchor = "top-left"
+	AnchorTopRight    BarcodeAnchor = "top-right"
+	AnchorBottomLeft  BarcodeAnchor = "bottom-left"
+	AnchorBottomRight BarcodeAnchor = "bottom-right"
+)
+
+// BarcodeConfig describes a barcode to render onto PDF pages.
+type BarcodeConfig struct {
+	Type       BarcodeType    `json:"type"`
+	Data       string         `json:"data"`
+	X          *float64       `json:"x,omitempty"`
+	Y          *float64       `json:"y,omitempty"`
+	Width      *float64       `json:"width,omitempty"`
+	Height     *float64       `json:"height,omitempty"`
+	Anchor     *BarcodeAnchor `json:"anchor,omitempty"`
+	Foreground *string        `json:"foreground,omitempty"`
+	Background *string        `json:"background,omitempty"`
+	DrawBg     *bool          `json:"draw_background,omitempty"`
+	Pages      *string        `json:"pages,omitempty"`
+}
+
 // Palette specifies a built-in color palette preset.
 type Palette string
 

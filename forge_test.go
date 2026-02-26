@@ -199,6 +199,236 @@ func TestNoPdf(t *testing.T) {
 	}
 }
 
+func TestBarcodeSimple(t *testing.T) {
+	c := NewClient("http://localhost:3000")
+	r := c.RenderHTML("<h1>Invoice</h1>").
+		PdfBarcode(BarcodeQR, "https://example.com/invoice/123")
+
+	p := r.buildPayload()
+	pdf, ok := p["pdf"].(map[string]any)
+	if !ok {
+		t.Fatal("pdf not present")
+	}
+	barcodes, ok := pdf["barcodes"].([]map[string]interface{})
+	if !ok {
+		t.Fatal("barcodes not present or wrong type")
+	}
+	if len(barcodes) != 1 {
+		t.Fatalf("barcodes len = %d, want 1", len(barcodes))
+	}
+	bc := barcodes[0]
+	if bc["type"] != "qr" {
+		t.Errorf("type = %v, want qr", bc["type"])
+	}
+	if bc["data"] != "https://example.com/invoice/123" {
+		t.Errorf("data = %v", bc["data"])
+	}
+	// Optional fields should not be present
+	for _, key := range []string{"x", "y", "width", "height", "anchor", "foreground", "background", "draw_background", "pages"} {
+		if _, ok := bc[key]; ok {
+			t.Errorf("%s should not be present", key)
+		}
+	}
+}
+
+func TestBarcodeWithFullConfig(t *testing.T) {
+	c := NewClient("http://localhost:3000")
+	x, y := 10.0, 20.0
+	w, h := 100.0, 50.0
+	anchor := AnchorBottomRight
+	fg := "#000000"
+	bg := "#ffffff"
+	drawBg := true
+	pages := "1,3-5"
+
+	r := c.RenderHTML("<h1>Invoice</h1>").
+		PdfBarcodeWith(BarcodeConfig{
+			Type:       BarcodeCode128,
+			Data:       "ABC-12345",
+			X:          &x,
+			Y:          &y,
+			Width:      &w,
+			Height:     &h,
+			Anchor:     &anchor,
+			Foreground: &fg,
+			Background: &bg,
+			DrawBg:     &drawBg,
+			Pages:      &pages,
+		})
+
+	p := r.buildPayload()
+	pdf, ok := p["pdf"].(map[string]any)
+	if !ok {
+		t.Fatal("pdf not present")
+	}
+	barcodes, ok := pdf["barcodes"].([]map[string]interface{})
+	if !ok {
+		t.Fatal("barcodes not present")
+	}
+	if len(barcodes) != 1 {
+		t.Fatalf("barcodes len = %d, want 1", len(barcodes))
+	}
+	bc := barcodes[0]
+	if bc["type"] != "code128" {
+		t.Errorf("type = %v", bc["type"])
+	}
+	if bc["data"] != "ABC-12345" {
+		t.Errorf("data = %v", bc["data"])
+	}
+	if bc["x"] != 10.0 {
+		t.Errorf("x = %v", bc["x"])
+	}
+	if bc["y"] != 20.0 {
+		t.Errorf("y = %v", bc["y"])
+	}
+	if bc["width"] != 100.0 {
+		t.Errorf("width = %v", bc["width"])
+	}
+	if bc["height"] != 50.0 {
+		t.Errorf("height = %v", bc["height"])
+	}
+	if bc["anchor"] != "bottom-right" {
+		t.Errorf("anchor = %v", bc["anchor"])
+	}
+	if bc["foreground"] != "#000000" {
+		t.Errorf("foreground = %v", bc["foreground"])
+	}
+	if bc["background"] != "#ffffff" {
+		t.Errorf("background = %v", bc["background"])
+	}
+	if bc["draw_background"] != true {
+		t.Errorf("draw_background = %v", bc["draw_background"])
+	}
+	if bc["pages"] != "1,3-5" {
+		t.Errorf("pages = %v", bc["pages"])
+	}
+}
+
+func TestMultipleBarcodes(t *testing.T) {
+	c := NewClient("http://localhost:3000")
+	r := c.RenderHTML("<h1>Product</h1>").
+		PdfBarcode(BarcodeQR, "https://example.com").
+		PdfBarcode(BarcodeEAN13, "4006381333931")
+
+	p := r.buildPayload()
+	pdf, ok := p["pdf"].(map[string]any)
+	if !ok {
+		t.Fatal("pdf not present")
+	}
+	barcodes, ok := pdf["barcodes"].([]map[string]interface{})
+	if !ok {
+		t.Fatal("barcodes not present")
+	}
+	if len(barcodes) != 2 {
+		t.Fatalf("barcodes len = %d, want 2", len(barcodes))
+	}
+	if barcodes[0]["type"] != "qr" {
+		t.Errorf("first type = %v", barcodes[0]["type"])
+	}
+	if barcodes[1]["type"] != "ean13" {
+		t.Errorf("second type = %v", barcodes[1]["type"])
+	}
+}
+
+func TestBarcodeOnlyTriggersPdf(t *testing.T) {
+	c := NewClient("http://localhost:3000")
+	r := c.RenderHTML("<p>test</p>").
+		PdfBarcode(BarcodeQR, "test-data")
+
+	p := r.buildPayload()
+	pdf, ok := p["pdf"].(map[string]any)
+	if !ok {
+		t.Fatal("pdf should be present when barcodes are set")
+	}
+	if _, ok := pdf["barcodes"]; !ok {
+		t.Error("barcodes should be present in pdf")
+	}
+	// No other pdf keys should be present
+	if _, ok := pdf["title"]; ok {
+		t.Error("title should not be present")
+	}
+	if _, ok := pdf["watermark"]; ok {
+		t.Error("watermark should not be present")
+	}
+}
+
+func TestWatermarkPages(t *testing.T) {
+	c := NewClient("http://localhost:3000")
+	r := c.RenderHTML("<h1>Draft</h1>").
+		PdfWatermarkText("DRAFT").
+		PdfWatermarkPages("1,3-5")
+
+	p := r.buildPayload()
+	pdf, ok := p["pdf"].(map[string]any)
+	if !ok {
+		t.Fatal("pdf not present")
+	}
+	wm, ok := pdf["watermark"].(map[string]any)
+	if !ok {
+		t.Fatal("watermark not present")
+	}
+	if wm["text"] != "DRAFT" {
+		t.Errorf("text = %v", wm["text"])
+	}
+	if wm["pages"] != "1,3-5" {
+		t.Errorf("pages = %v", wm["pages"])
+	}
+}
+
+func TestWatermarkPagesOnlyTriggers(t *testing.T) {
+	c := NewClient("http://localhost:3000")
+	r := c.RenderHTML("<h1>Test</h1>").
+		PdfWatermarkPages("2-4")
+
+	p := r.buildPayload()
+	pdf, ok := p["pdf"].(map[string]any)
+	if !ok {
+		t.Fatal("pdf should be present when watermark pages set")
+	}
+	wm, ok := pdf["watermark"].(map[string]any)
+	if !ok {
+		t.Fatal("watermark should be present")
+	}
+	if wm["pages"] != "2-4" {
+		t.Errorf("pages = %v", wm["pages"])
+	}
+}
+
+func TestBarcodeTypeConstants(t *testing.T) {
+	tests := []struct {
+		bt   BarcodeType
+		want string
+	}{
+		{BarcodeQR, "qr"},
+		{BarcodeCode128, "code128"},
+		{BarcodeEAN13, "ean13"},
+		{BarcodeUPCA, "upca"},
+		{BarcodeCode39, "code39"},
+	}
+	for _, tt := range tests {
+		if string(tt.bt) != tt.want {
+			t.Errorf("BarcodeType %v = %q, want %q", tt.bt, string(tt.bt), tt.want)
+		}
+	}
+}
+
+func TestBarcodeAnchorConstants(t *testing.T) {
+	tests := []struct {
+		a    BarcodeAnchor
+		want string
+	}{
+		{AnchorTopLeft, "top-left"},
+		{AnchorTopRight, "top-right"},
+		{AnchorBottomLeft, "bottom-left"},
+		{AnchorBottomRight, "bottom-right"},
+	}
+	for _, tt := range tests {
+		if string(tt.a) != tt.want {
+			t.Errorf("BarcodeAnchor %v = %q, want %q", tt.a, string(tt.a), tt.want)
+		}
+	}
+}
+
 func TestTrailingSlash(t *testing.T) {
 	c := NewClient("http://localhost:3000/")
 	if c.baseURL != "http://localhost:3000" {

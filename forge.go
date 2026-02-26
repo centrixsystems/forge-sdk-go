@@ -111,8 +111,10 @@ type RenderRequest struct {
 	pdfWatermarkFontSize *float64
 	pdfWatermarkScale    *float64
 	pdfWatermarkLayer    *string
+	pdfWatermarkPages    *string
 	pdfStandard          *PdfStandard
 	pdfEmbeddedFiles     []EmbeddedFile
+	pdfBarcodes          []BarcodeConfig
 }
 
 // Format sets the output format (default: "pdf").
@@ -304,6 +306,24 @@ func (r *RenderRequest) PdfAttach(path, data string, opts ...func(*EmbeddedFile)
 	return r
 }
 
+// PdfWatermarkPages sets which pages the watermark applies to (e.g. "1,3-5").
+func (r *RenderRequest) PdfWatermarkPages(pages string) *RenderRequest {
+	r.pdfWatermarkPages = &pages
+	return r
+}
+
+// PdfBarcode adds a barcode with the given type and data.
+func (r *RenderRequest) PdfBarcode(barcodeType BarcodeType, data string) *RenderRequest {
+	r.pdfBarcodes = append(r.pdfBarcodes, BarcodeConfig{Type: barcodeType, Data: data})
+	return r
+}
+
+// PdfBarcodeWith adds a fully-configured barcode.
+func (r *RenderRequest) PdfBarcodeWith(config BarcodeConfig) *RenderRequest {
+	r.pdfBarcodes = append(r.pdfBarcodes, config)
+	return r
+}
+
 // buildPayload builds the JSON payload map.
 func (r *RenderRequest) buildPayload() map[string]any {
 	p := map[string]any{}
@@ -366,11 +386,12 @@ func (r *RenderRequest) buildPayload() map[string]any {
 	hasWatermark := r.pdfWatermarkText != nil || r.pdfWatermarkImage != nil ||
 		r.pdfWatermarkOpacity != nil || r.pdfWatermarkRotation != nil ||
 		r.pdfWatermarkColor != nil || r.pdfWatermarkFontSize != nil ||
-		r.pdfWatermarkScale != nil || r.pdfWatermarkLayer != nil
+		r.pdfWatermarkScale != nil || r.pdfWatermarkLayer != nil ||
+		r.pdfWatermarkPages != nil
 
 	if r.pdfTitle != nil || r.pdfAuthor != nil || r.pdfSubject != nil ||
 		r.pdfKeywords != nil || r.pdfCreator != nil || r.pdfBookmarks != nil || hasWatermark ||
-		r.pdfStandard != nil || len(r.pdfEmbeddedFiles) > 0 {
+		r.pdfStandard != nil || len(r.pdfEmbeddedFiles) > 0 || len(r.pdfBarcodes) > 0 {
 		pdf := map[string]any{}
 		if r.pdfTitle != nil {
 			pdf["title"] = *r.pdfTitle
@@ -416,6 +437,9 @@ func (r *RenderRequest) buildPayload() map[string]any {
 			if r.pdfWatermarkLayer != nil {
 				wm["layer"] = *r.pdfWatermarkLayer
 			}
+			if r.pdfWatermarkPages != nil {
+				wm["pages"] = *r.pdfWatermarkPages
+			}
 			pdf["watermark"] = wm
 		}
 		if r.pdfStandard != nil {
@@ -440,6 +464,44 @@ func (r *RenderRequest) buildPayload() map[string]any {
 				files[i] = f
 			}
 			pdf["embedded_files"] = files
+		}
+		if len(r.pdfBarcodes) > 0 {
+			barcodes := make([]map[string]interface{}, len(r.pdfBarcodes))
+			for i, bc := range r.pdfBarcodes {
+				b := map[string]interface{}{
+					"type": string(bc.Type),
+					"data": bc.Data,
+				}
+				if bc.X != nil {
+					b["x"] = *bc.X
+				}
+				if bc.Y != nil {
+					b["y"] = *bc.Y
+				}
+				if bc.Width != nil {
+					b["width"] = *bc.Width
+				}
+				if bc.Height != nil {
+					b["height"] = *bc.Height
+				}
+				if bc.Anchor != nil {
+					b["anchor"] = string(*bc.Anchor)
+				}
+				if bc.Foreground != nil {
+					b["foreground"] = *bc.Foreground
+				}
+				if bc.Background != nil {
+					b["background"] = *bc.Background
+				}
+				if bc.DrawBg != nil {
+					b["draw_background"] = *bc.DrawBg
+				}
+				if bc.Pages != nil {
+					b["pages"] = *bc.Pages
+				}
+				barcodes[i] = b
+			}
+			pdf["barcodes"] = barcodes
 		}
 		p["pdf"] = pdf
 	}
