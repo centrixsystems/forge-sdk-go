@@ -102,6 +102,21 @@ pdf, err := client.RenderHTML("<h1>Annual Report</h1><p>Contents...</p>").
 	Send(ctx)
 ```
 
+### PDF Watermarks
+
+Add text or image watermarks to each page.
+
+```go
+pdf, err := client.RenderHTML("<h1>Draft Report</h1>").
+	Format(forge.FormatPDF).
+	PdfWatermarkText("DRAFT").
+	PdfWatermarkOpacity(0.15).
+	PdfWatermarkRotation(-45).
+	PdfWatermarkColor("#888888").
+	PdfWatermarkLayer(forge.WatermarkOver).
+	Send(ctx)
+```
+
 ### Custom Client Configuration
 
 ```go
@@ -169,6 +184,14 @@ All methods return `*RenderRequest` for chaining. Call `.Send(ctx)` to execute.
 | `PdfKeywords` | `string` | PDF keywords metadata (comma-separated) |
 | `PdfCreator` | `string` | PDF creator application metadata |
 | `PdfBookmarks` | `bool` | Enable PDF bookmarks from headings |
+| `PdfWatermarkText` | `string` | Watermark text on each page |
+| `PdfWatermarkImage` | `string` | Base64-encoded PNG/JPEG watermark image |
+| `PdfWatermarkOpacity` | `float64` | Watermark opacity (0.0-1.0, default: 0.15) |
+| `PdfWatermarkRotation` | `float64` | Watermark rotation in degrees (default: -45) |
+| `PdfWatermarkColor` | `string` | Watermark text color as hex (default: #888888) |
+| `PdfWatermarkFontSize` | `float64` | Watermark font size in PDF points (default: auto) |
+| `PdfWatermarkScale` | `float64` | Watermark image scale (0.0-1.0, default: 0.5) |
+| `PdfWatermarkLayer` | `WatermarkLayer` | Layer position: `WatermarkOver` or `WatermarkUnder` |
 
 | Terminal Method | Returns | Description |
 |-----------------|---------|-------------|
@@ -183,6 +206,7 @@ All methods return `*RenderRequest` for chaining. Call `.Send(ctx)` to execute.
 | `Flow` | `FlowAuto`, `FlowPaginate`, `FlowContinuous` |
 | `DitherMethod` | `DitherNone`, `DitherFloydSteinberg`, `DitherAtkinson`, `DitherOrdered` |
 | `Palette` | `PaletteAuto`, `PaletteBlackWhite`, `PaletteGrayscale`, `PaletteEink` |
+| `WatermarkLayer` | `WatermarkOver`, `WatermarkUnder` |
 
 ### Errors
 

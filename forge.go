@@ -103,6 +103,14 @@ type RenderRequest struct {
 	pdfKeywords *string
 	pdfCreator  *string
 	pdfBookmarks *bool
+	pdfWatermarkText     *string
+	pdfWatermarkImage    *string  // base64-encoded
+	pdfWatermarkOpacity  *float64
+	pdfWatermarkRotation *float64
+	pdfWatermarkColor    *string
+	pdfWatermarkFontSize *float64
+	pdfWatermarkScale    *float64
+	pdfWatermarkLayer    *string
 }
 
 // Format sets the output format (default: "pdf").
@@ -229,6 +237,55 @@ func (r *RenderRequest) PdfBookmarks(enabled bool) *RenderRequest {
 	return r
 }
 
+// PdfWatermarkText sets the watermark text overlay on each PDF page.
+func (r *RenderRequest) PdfWatermarkText(text string) *RenderRequest {
+	r.pdfWatermarkText = &text
+	return r
+}
+
+// PdfWatermarkImage sets the watermark image (base64-encoded PNG/JPEG).
+func (r *RenderRequest) PdfWatermarkImage(base64Data string) *RenderRequest {
+	r.pdfWatermarkImage = &base64Data
+	return r
+}
+
+// PdfWatermarkOpacity sets the watermark opacity (0.0-1.0, default 0.15).
+func (r *RenderRequest) PdfWatermarkOpacity(opacity float64) *RenderRequest {
+	r.pdfWatermarkOpacity = &opacity
+	return r
+}
+
+// PdfWatermarkRotation sets the watermark rotation in degrees (default -45).
+func (r *RenderRequest) PdfWatermarkRotation(degrees float64) *RenderRequest {
+	r.pdfWatermarkRotation = &degrees
+	return r
+}
+
+// PdfWatermarkColor sets the watermark text color as hex (default "#888888").
+func (r *RenderRequest) PdfWatermarkColor(hex string) *RenderRequest {
+	r.pdfWatermarkColor = &hex
+	return r
+}
+
+// PdfWatermarkFontSize sets the watermark font size in PDF points.
+func (r *RenderRequest) PdfWatermarkFontSize(size float64) *RenderRequest {
+	r.pdfWatermarkFontSize = &size
+	return r
+}
+
+// PdfWatermarkScale sets the watermark image scale (0.0-1.0, default 0.5).
+func (r *RenderRequest) PdfWatermarkScale(scale float64) *RenderRequest {
+	r.pdfWatermarkScale = &scale
+	return r
+}
+
+// PdfWatermarkLayer sets the watermark layer position.
+func (r *RenderRequest) PdfWatermarkLayer(layer WatermarkLayer) *RenderRequest {
+	s := string(layer)
+	r.pdfWatermarkLayer = &s
+	return r
+}
+
 // buildPayload builds the JSON payload map.
 func (r *RenderRequest) buildPayload() map[string]any {
 	p := map[string]any{}
@@ -288,8 +345,13 @@ func (r *RenderRequest) buildPayload() map[string]any {
 		p["quantize"] = q
 	}
 
+	hasWatermark := r.pdfWatermarkText != nil || r.pdfWatermarkImage != nil ||
+		r.pdfWatermarkOpacity != nil || r.pdfWatermarkRotation != nil ||
+		r.pdfWatermarkColor != nil || r.pdfWatermarkFontSize != nil ||
+		r.pdfWatermarkScale != nil || r.pdfWatermarkLayer != nil
+
 	if r.pdfTitle != nil || r.pdfAuthor != nil || r.pdfSubject != nil ||
-		r.pdfKeywords != nil || r.pdfCreator != nil || r.pdfBookmarks != nil {
+		r.pdfKeywords != nil || r.pdfCreator != nil || r.pdfBookmarks != nil || hasWatermark {
 		pdf := map[string]any{}
 		if r.pdfTitle != nil {
 			pdf["title"] = *r.pdfTitle
@@ -308,6 +370,34 @@ func (r *RenderRequest) buildPayload() map[string]any {
 		}
 		if r.pdfBookmarks != nil {
 			pdf["bookmarks"] = *r.pdfBookmarks
+		}
+		if hasWatermark {
+			wm := map[string]any{}
+			if r.pdfWatermarkText != nil {
+				wm["text"] = *r.pdfWatermarkText
+			}
+			if r.pdfWatermarkImage != nil {
+				wm["image_data"] = *r.pdfWatermarkImage
+			}
+			if r.pdfWatermarkOpacity != nil {
+				wm["opacity"] = *r.pdfWatermarkOpacity
+			}
+			if r.pdfWatermarkRotation != nil {
+				wm["rotation"] = *r.pdfWatermarkRotation
+			}
+			if r.pdfWatermarkColor != nil {
+				wm["color"] = *r.pdfWatermarkColor
+			}
+			if r.pdfWatermarkFontSize != nil {
+				wm["font_size"] = *r.pdfWatermarkFontSize
+			}
+			if r.pdfWatermarkScale != nil {
+				wm["scale"] = *r.pdfWatermarkScale
+			}
+			if r.pdfWatermarkLayer != nil {
+				wm["layer"] = *r.pdfWatermarkLayer
+			}
+			pdf["watermark"] = wm
 		}
 		p["pdf"] = pdf
 	}

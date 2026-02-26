@@ -40,6 +40,14 @@ const (
 	DitherOrdered       DitherMethod = "ordered"
 )
 
+// WatermarkLayer specifies whether the watermark renders over or under content.
+type WatermarkLayer string
+
+const (
+	WatermarkOver  WatermarkLayer = "over"
+	WatermarkUnder WatermarkLayer = "under"
+)
+
 // Palette specifies a built-in color palette preset.
 type Palette string
 
