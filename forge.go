@@ -102,7 +102,8 @@ type RenderRequest struct {
 	pdfSubject  *string
 	pdfKeywords *string
 	pdfCreator  *string
-	pdfBookmarks *bool
+	pdfBookmarks    *bool
+	pdfPageNumbers  *bool
 	pdfWatermarkText     *string
 	pdfWatermarkImage    *string  // base64-encoded
 	pdfWatermarkOpacity  *float64
@@ -115,6 +116,18 @@ type RenderRequest struct {
 	pdfStandard          *PdfStandard
 	pdfEmbeddedFiles     []EmbeddedFile
 	pdfBarcodes          []BarcodeConfig
+	pdfMode              *string
+	pdfSignCertificate   *string
+	pdfSignPassword      *string
+	pdfSignName          *string
+	pdfSignReason        *string
+	pdfSignLocation      *string
+	pdfSignTimestampUrl  *string
+	pdfUserPassword      *string
+	pdfOwnerPassword     *string
+	pdfPermissions       *string
+	pdfAccessibility     *string
+	pdfLinearize         *bool
 }
 
 // Format sets the output format (default: "pdf").
@@ -241,6 +254,12 @@ func (r *RenderRequest) PdfBookmarks(enabled bool) *RenderRequest {
 	return r
 }
 
+// PdfPageNumbers enables or disables "Page X of Y" footers on each page.
+func (r *RenderRequest) PdfPageNumbers(enabled bool) *RenderRequest {
+	r.pdfPageNumbers = &enabled
+	return r
+}
+
 // PdfWatermarkText sets the watermark text overlay on each PDF page.
 func (r *RenderRequest) PdfWatermarkText(text string) *RenderRequest {
 	r.pdfWatermarkText = &text
@@ -324,6 +343,80 @@ func (r *RenderRequest) PdfBarcodeWith(config BarcodeConfig) *RenderRequest {
 	return r
 }
 
+// PdfMode sets the PDF rendering mode (auto, vector, or raster).
+func (r *RenderRequest) PdfMode(mode PdfMode) *RenderRequest {
+	s := string(mode)
+	r.pdfMode = &s
+	return r
+}
+
+// PdfSignCertificate sets the base64-encoded PKCS#12 certificate for PDF signing.
+func (r *RenderRequest) PdfSignCertificate(data string) *RenderRequest {
+	r.pdfSignCertificate = &data
+	return r
+}
+
+// PdfSignPassword sets the password for the PKCS#12 certificate.
+func (r *RenderRequest) PdfSignPassword(password string) *RenderRequest {
+	r.pdfSignPassword = &password
+	return r
+}
+
+// PdfSignName sets the signer name for the PDF signature.
+func (r *RenderRequest) PdfSignName(name string) *RenderRequest {
+	r.pdfSignName = &name
+	return r
+}
+
+// PdfSignReason sets the reason for the PDF signature.
+func (r *RenderRequest) PdfSignReason(reason string) *RenderRequest {
+	r.pdfSignReason = &reason
+	return r
+}
+
+// PdfSignLocation sets the location for the PDF signature.
+func (r *RenderRequest) PdfSignLocation(location string) *RenderRequest {
+	r.pdfSignLocation = &location
+	return r
+}
+
+// PdfSignTimestampUrl sets the RFC 3161 timestamp server URL for the PDF signature.
+func (r *RenderRequest) PdfSignTimestampUrl(url string) *RenderRequest {
+	r.pdfSignTimestampUrl = &url
+	return r
+}
+
+// PdfUserPassword sets the user password for PDF encryption (required to open).
+func (r *RenderRequest) PdfUserPassword(password string) *RenderRequest {
+	r.pdfUserPassword = &password
+	return r
+}
+
+// PdfOwnerPassword sets the owner password for PDF encryption (required to edit).
+func (r *RenderRequest) PdfOwnerPassword(password string) *RenderRequest {
+	r.pdfOwnerPassword = &password
+	return r
+}
+
+// PdfPermissions sets the PDF permission flags (comma-separated, e.g. "print,copy").
+func (r *RenderRequest) PdfPermissions(permissions string) *RenderRequest {
+	r.pdfPermissions = &permissions
+	return r
+}
+
+// PdfAccessibility sets the PDF accessibility compliance level.
+func (r *RenderRequest) PdfAccessibility(level AccessibilityLevel) *RenderRequest {
+	s := string(level)
+	r.pdfAccessibility = &s
+	return r
+}
+
+// PdfLinearize enables or disables PDF linearization (fast web view).
+func (r *RenderRequest) PdfLinearize(enabled bool) *RenderRequest {
+	r.pdfLinearize = &enabled
+	return r
+}
+
 // buildPayload builds the JSON payload map.
 func (r *RenderRequest) buildPayload() map[string]any {
 	p := map[string]any{}
@@ -389,9 +482,19 @@ func (r *RenderRequest) buildPayload() map[string]any {
 		r.pdfWatermarkScale != nil || r.pdfWatermarkLayer != nil ||
 		r.pdfWatermarkPages != nil
 
+	hasSignature := r.pdfSignCertificate != nil || r.pdfSignPassword != nil ||
+		r.pdfSignName != nil || r.pdfSignReason != nil || r.pdfSignLocation != nil ||
+		r.pdfSignTimestampUrl != nil
+
+	hasEncryption := r.pdfUserPassword != nil || r.pdfOwnerPassword != nil ||
+		r.pdfPermissions != nil
+
 	if r.pdfTitle != nil || r.pdfAuthor != nil || r.pdfSubject != nil ||
-		r.pdfKeywords != nil || r.pdfCreator != nil || r.pdfBookmarks != nil || hasWatermark ||
-		r.pdfStandard != nil || len(r.pdfEmbeddedFiles) > 0 || len(r.pdfBarcodes) > 0 {
+		r.pdfKeywords != nil || r.pdfCreator != nil || r.pdfBookmarks != nil ||
+		r.pdfPageNumbers != nil || hasWatermark ||
+		r.pdfStandard != nil || len(r.pdfEmbeddedFiles) > 0 || len(r.pdfBarcodes) > 0 ||
+		r.pdfMode != nil || hasSignature || hasEncryption || r.pdfAccessibility != nil ||
+		r.pdfLinearize != nil {
 		pdf := map[string]any{}
 		if r.pdfTitle != nil {
 			pdf["title"] = *r.pdfTitle
@@ -410,6 +513,9 @@ func (r *RenderRequest) buildPayload() map[string]any {
 		}
 		if r.pdfBookmarks != nil {
 			pdf["bookmarks"] = *r.pdfBookmarks
+		}
+		if r.pdfPageNumbers != nil {
+			pdf["page_numbers"] = *r.pdfPageNumbers
 		}
 		if hasWatermark {
 			wm := map[string]any{}
@@ -502,6 +608,50 @@ func (r *RenderRequest) buildPayload() map[string]any {
 				barcodes[i] = b
 			}
 			pdf["barcodes"] = barcodes
+		}
+		if r.pdfMode != nil {
+			pdf["mode"] = *r.pdfMode
+		}
+		if hasSignature {
+			sig := map[string]any{}
+			if r.pdfSignCertificate != nil {
+				sig["certificate_data"] = *r.pdfSignCertificate
+			}
+			if r.pdfSignPassword != nil {
+				sig["password"] = *r.pdfSignPassword
+			}
+			if r.pdfSignName != nil {
+				sig["signer_name"] = *r.pdfSignName
+			}
+			if r.pdfSignReason != nil {
+				sig["reason"] = *r.pdfSignReason
+			}
+			if r.pdfSignLocation != nil {
+				sig["location"] = *r.pdfSignLocation
+			}
+			if r.pdfSignTimestampUrl != nil {
+				sig["timestamp_url"] = *r.pdfSignTimestampUrl
+			}
+			pdf["signature"] = sig
+		}
+		if hasEncryption {
+			enc := map[string]any{}
+			if r.pdfUserPassword != nil {
+				enc["user_password"] = *r.pdfUserPassword
+			}
+			if r.pdfOwnerPassword != nil {
+				enc["owner_password"] = *r.pdfOwnerPassword
+			}
+			if r.pdfPermissions != nil {
+				enc["permissions"] = *r.pdfPermissions
+			}
+			pdf["encryption"] = enc
+		}
+		if r.pdfAccessibility != nil {
+			pdf["accessibility"] = *r.pdfAccessibility
+		}
+		if r.pdfLinearize != nil {
+			pdf["linearize"] = *r.pdfLinearize
 		}
 		p["pdf"] = pdf
 	}

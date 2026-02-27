@@ -117,6 +117,46 @@ pdf, err := client.RenderHTML("<h1>Draft Report</h1>").
 	Send(ctx)
 ```
 
+### PDF Signing
+
+Digitally sign PDFs with a PKCS#12 certificate.
+
+```go
+pdf, err := client.RenderHTML("<h1>Contract</h1>").
+	Format(forge.FormatPDF).
+	PdfSignCertificate(base64CertData).
+	PdfSignPassword("cert-password").
+	PdfSignName("John Doe").
+	PdfSignReason("Approval").
+	PdfSignLocation("New York").
+	PdfSignTimestampUrl("https://tsa.example.com").
+	Send(ctx)
+```
+
+### PDF Encryption
+
+Protect PDFs with user/owner passwords and permission flags.
+
+```go
+pdf, err := client.RenderHTML("<h1>Confidential</h1>").
+	Format(forge.FormatPDF).
+	PdfUserPassword("open-password").
+	PdfOwnerPassword("admin-password").
+	PdfPermissions("print,copy").
+	Send(ctx)
+```
+
+### PDF Accessibility & Linearization
+
+```go
+pdf, err := client.RenderHTML("<h1>Accessible Report</h1>").
+	Format(forge.FormatPDF).
+	PdfMode(forge.PdfModeVector).
+	PdfAccessibility(forge.AccessibilityPdfUa1).
+	PdfLinearize(true).
+	Send(ctx)
+```
+
 ### Custom Client Configuration
 
 ```go
@@ -184,6 +224,7 @@ All methods return `*RenderRequest` for chaining. Call `.Send(ctx)` to execute.
 | `PdfKeywords` | `string` | PDF keywords metadata (comma-separated) |
 | `PdfCreator` | `string` | PDF creator application metadata |
 | `PdfBookmarks` | `bool` | Enable PDF bookmarks from headings |
+| `PdfPageNumbers` | `bool` | Enable "Page X of Y" footers on each page |
 | `PdfWatermarkText` | `string` | Watermark text on each page |
 | `PdfWatermarkImage` | `string` | Base64-encoded PNG/JPEG watermark image |
 | `PdfWatermarkOpacity` | `float64` | Watermark opacity (0.0-1.0, default: 0.15) |
@@ -194,6 +235,21 @@ All methods return `*RenderRequest` for chaining. Call `.Send(ctx)` to execute.
 | `PdfWatermarkLayer` | `WatermarkLayer` | Layer position: `WatermarkOver` or `WatermarkUnder` |
 | `PdfStandard` | `PdfStandard` | PDF standard: `PdfStandardNone`, `PdfStandardA2B`, `PdfStandardA3B` |
 | `PdfAttach` | `path, data string, opts...` | Embed file in PDF (base64 data) |
+| `PdfWatermarkPages` | `string` | Pages for watermark (e.g. `"1,3-5"`, `"first"`, `"last"`) |
+| `PdfBarcode` | `BarcodeType, string` | Add a barcode with type and data |
+| `PdfBarcodeWith` | `BarcodeConfig` | Add a fully-configured barcode |
+| `PdfMode` | `PdfMode` | PDF rendering mode: `PdfModeAuto`, `PdfModeVector`, `PdfModeRaster` |
+| `PdfSignCertificate` | `string` | Base64-encoded PKCS#12 certificate for signing |
+| `PdfSignPassword` | `string` | Password for the PKCS#12 certificate |
+| `PdfSignName` | `string` | Signer name for the PDF signature |
+| `PdfSignReason` | `string` | Reason for the PDF signature |
+| `PdfSignLocation` | `string` | Location for the PDF signature |
+| `PdfSignTimestampUrl` | `string` | RFC 3161 timestamp server URL |
+| `PdfUserPassword` | `string` | User password for PDF encryption (required to open) |
+| `PdfOwnerPassword` | `string` | Owner password for PDF encryption (required to edit) |
+| `PdfPermissions` | `string` | PDF permission flags (comma-separated, e.g. `"print,copy"`) |
+| `PdfAccessibility` | `AccessibilityLevel` | Accessibility level: `AccessibilityNone`, `AccessibilityBasic`, `AccessibilityPdfUa1` |
+| `PdfLinearize` | `bool` | Enable PDF linearization (fast web view) |
 
 | Terminal Method | Returns | Description |
 |-----------------|---------|-------------|
@@ -210,7 +266,11 @@ All methods return `*RenderRequest` for chaining. Call `.Send(ctx)` to execute.
 | `Palette` | `PaletteAuto`, `PaletteBlackWhite`, `PaletteGrayscale`, `PaletteEink` |
 | `WatermarkLayer` | `WatermarkOver`, `WatermarkUnder` |
 | `PdfStandard` | `PdfStandardNone`, `PdfStandardA2B`, `PdfStandardA3B` |
+| `BarcodeType` | `BarcodeQR`, `BarcodeCode128`, `BarcodeEAN13`, `BarcodeUPCA`, `BarcodeCode39` |
+| `BarcodeAnchor` | `AnchorTopLeft`, `AnchorTopRight`, `AnchorBottomLeft`, `AnchorBottomRight` |
 | `EmbedRelationship` | `EmbedRelationshipAlternative`, `EmbedRelationshipSupplement`, `EmbedRelationshipData`, `EmbedRelationshipSource`, `EmbedRelationshipUnspecified` |
+| `PdfMode` | `PdfModeAuto`, `PdfModeVector`, `PdfModeRaster` |
+| `AccessibilityLevel` | `AccessibilityNone`, `AccessibilityBasic`, `AccessibilityPdfUa1` |
 
 ### Errors
 

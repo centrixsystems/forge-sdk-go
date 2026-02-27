@@ -435,3 +435,321 @@ func TestTrailingSlash(t *testing.T) {
 		t.Errorf("baseURL = %v", c.baseURL)
 	}
 }
+
+func TestPdfModePayload(t *testing.T) {
+	c := NewClient("http://localhost:3000")
+	r := c.RenderHTML("<h1>Test</h1>").
+		PdfMode(PdfModeVector)
+
+	p := r.buildPayload()
+	pdf, ok := p["pdf"].(map[string]any)
+	if !ok {
+		t.Fatal("pdf not present")
+	}
+	if pdf["mode"] != "vector" {
+		t.Errorf("mode = %v, want vector", pdf["mode"])
+	}
+}
+
+func TestPdfModeConstants(t *testing.T) {
+	tests := []struct {
+		m    PdfMode
+		want string
+	}{
+		{PdfModeAuto, "auto"},
+		{PdfModeVector, "vector"},
+		{PdfModeRaster, "raster"},
+	}
+	for _, tt := range tests {
+		if string(tt.m) != tt.want {
+			t.Errorf("PdfMode %v = %q, want %q", tt.m, string(tt.m), tt.want)
+		}
+	}
+}
+
+func TestAccessibilityLevelConstants(t *testing.T) {
+	tests := []struct {
+		a    AccessibilityLevel
+		want string
+	}{
+		{AccessibilityNone, "none"},
+		{AccessibilityBasic, "basic"},
+		{AccessibilityPdfUa1, "pdf/ua-1"},
+	}
+	for _, tt := range tests {
+		if string(tt.a) != tt.want {
+			t.Errorf("AccessibilityLevel %v = %q, want %q", tt.a, string(tt.a), tt.want)
+		}
+	}
+}
+
+func TestPdfSignaturePayload(t *testing.T) {
+	c := NewClient("http://localhost:3000")
+	r := c.RenderHTML("<h1>Contract</h1>").
+		PdfSignCertificate("base64certdata==").
+		PdfSignPassword("secret").
+		PdfSignName("John Doe").
+		PdfSignReason("Approval").
+		PdfSignLocation("New York").
+		PdfSignTimestampUrl("https://tsa.example.com")
+
+	p := r.buildPayload()
+	pdf, ok := p["pdf"].(map[string]any)
+	if !ok {
+		t.Fatal("pdf not present")
+	}
+	sig, ok := pdf["signature"].(map[string]any)
+	if !ok {
+		t.Fatal("signature not present")
+	}
+	if sig["certificate_data"] != "base64certdata==" {
+		t.Errorf("certificate = %v", sig["certificate_data"])
+	}
+	if sig["password"] != "secret" {
+		t.Errorf("password = %v", sig["password"])
+	}
+	if sig["signer_name"] != "John Doe" {
+		t.Errorf("name = %v", sig["signer_name"])
+	}
+	if sig["reason"] != "Approval" {
+		t.Errorf("reason = %v", sig["reason"])
+	}
+	if sig["location"] != "New York" {
+		t.Errorf("location = %v", sig["location"])
+	}
+	if sig["timestamp_url"] != "https://tsa.example.com" {
+		t.Errorf("timestamp_url = %v", sig["timestamp_url"])
+	}
+}
+
+func TestPdfSignaturePartial(t *testing.T) {
+	c := NewClient("http://localhost:3000")
+	r := c.RenderHTML("<h1>Doc</h1>").
+		PdfSignCertificate("certdata").
+		PdfSignName("Jane")
+
+	p := r.buildPayload()
+	pdf, ok := p["pdf"].(map[string]any)
+	if !ok {
+		t.Fatal("pdf not present")
+	}
+	sig, ok := pdf["signature"].(map[string]any)
+	if !ok {
+		t.Fatal("signature not present")
+	}
+	if sig["certificate_data"] != "certdata" {
+		t.Errorf("certificate = %v", sig["certificate_data"])
+	}
+	if sig["signer_name"] != "Jane" {
+		t.Errorf("name = %v", sig["signer_name"])
+	}
+	if _, ok := sig["password"]; ok {
+		t.Error("password should not be present")
+	}
+	if _, ok := sig["reason"]; ok {
+		t.Error("reason should not be present")
+	}
+	if _, ok := sig["location"]; ok {
+		t.Error("location should not be present")
+	}
+	if _, ok := sig["timestamp_url"]; ok {
+		t.Error("timestamp_url should not be present")
+	}
+}
+
+func TestPdfEncryptionPayload(t *testing.T) {
+	c := NewClient("http://localhost:3000")
+	r := c.RenderHTML("<h1>Secure</h1>").
+		PdfUserPassword("open123").
+		PdfOwnerPassword("admin456").
+		PdfPermissions("print,copy")
+
+	p := r.buildPayload()
+	pdf, ok := p["pdf"].(map[string]any)
+	if !ok {
+		t.Fatal("pdf not present")
+	}
+	enc, ok := pdf["encryption"].(map[string]any)
+	if !ok {
+		t.Fatal("encryption not present")
+	}
+	if enc["user_password"] != "open123" {
+		t.Errorf("user_password = %v", enc["user_password"])
+	}
+	if enc["owner_password"] != "admin456" {
+		t.Errorf("owner_password = %v", enc["owner_password"])
+	}
+	if enc["permissions"] != "print,copy" {
+		t.Errorf("permissions = %v", enc["permissions"])
+	}
+}
+
+func TestPdfEncryptionPartial(t *testing.T) {
+	c := NewClient("http://localhost:3000")
+	r := c.RenderHTML("<h1>Protected</h1>").
+		PdfUserPassword("viewonly")
+
+	p := r.buildPayload()
+	pdf, ok := p["pdf"].(map[string]any)
+	if !ok {
+		t.Fatal("pdf not present")
+	}
+	enc, ok := pdf["encryption"].(map[string]any)
+	if !ok {
+		t.Fatal("encryption not present")
+	}
+	if enc["user_password"] != "viewonly" {
+		t.Errorf("user_password = %v", enc["user_password"])
+	}
+	if _, ok := enc["owner_password"]; ok {
+		t.Error("owner_password should not be present")
+	}
+	if _, ok := enc["permissions"]; ok {
+		t.Error("permissions should not be present")
+	}
+}
+
+func TestPdfAccessibilityPayload(t *testing.T) {
+	c := NewClient("http://localhost:3000")
+	r := c.RenderHTML("<h1>Accessible</h1>").
+		PdfAccessibility(AccessibilityPdfUa1)
+
+	p := r.buildPayload()
+	pdf, ok := p["pdf"].(map[string]any)
+	if !ok {
+		t.Fatal("pdf not present")
+	}
+	if pdf["accessibility"] != "pdf/ua-1" {
+		t.Errorf("accessibility = %v, want pdf/ua-1", pdf["accessibility"])
+	}
+}
+
+func TestPdfLinearizePayload(t *testing.T) {
+	c := NewClient("http://localhost:3000")
+	r := c.RenderHTML("<h1>Web</h1>").
+		PdfLinearize(true)
+
+	p := r.buildPayload()
+	pdf, ok := p["pdf"].(map[string]any)
+	if !ok {
+		t.Fatal("pdf not present")
+	}
+	if pdf["linearize"] != true {
+		t.Errorf("linearize = %v, want true", pdf["linearize"])
+	}
+}
+
+func TestPdfLinearizeFalse(t *testing.T) {
+	c := NewClient("http://localhost:3000")
+	r := c.RenderHTML("<h1>Web</h1>").
+		PdfLinearize(false)
+
+	p := r.buildPayload()
+	pdf, ok := p["pdf"].(map[string]any)
+	if !ok {
+		t.Fatal("pdf not present")
+	}
+	if pdf["linearize"] != false {
+		t.Errorf("linearize = %v, want false", pdf["linearize"])
+	}
+}
+
+func TestPdfAllNewOptions(t *testing.T) {
+	c := NewClient("http://localhost:3000")
+	r := c.RenderHTML("<h1>Full</h1>").
+		PdfTitle("Full Test").
+		PdfMode(PdfModeRaster).
+		PdfSignCertificate("cert123").
+		PdfSignPassword("pass").
+		PdfUserPassword("user").
+		PdfOwnerPassword("owner").
+		PdfPermissions("print").
+		PdfAccessibility(AccessibilityBasic).
+		PdfLinearize(true)
+
+	p := r.buildPayload()
+	pdf, ok := p["pdf"].(map[string]any)
+	if !ok {
+		t.Fatal("pdf not present")
+	}
+	if pdf["title"] != "Full Test" {
+		t.Errorf("title = %v", pdf["title"])
+	}
+	if pdf["mode"] != "raster" {
+		t.Errorf("mode = %v", pdf["mode"])
+	}
+	sig, ok := pdf["signature"].(map[string]any)
+	if !ok {
+		t.Fatal("signature not present")
+	}
+	if sig["certificate_data"] != "cert123" {
+		t.Errorf("certificate = %v", sig["certificate_data"])
+	}
+	if sig["password"] != "pass" {
+		t.Errorf("password = %v", sig["password"])
+	}
+	enc, ok := pdf["encryption"].(map[string]any)
+	if !ok {
+		t.Fatal("encryption not present")
+	}
+	if enc["user_password"] != "user" {
+		t.Errorf("user_password = %v", enc["user_password"])
+	}
+	if enc["owner_password"] != "owner" {
+		t.Errorf("owner_password = %v", enc["owner_password"])
+	}
+	if enc["permissions"] != "print" {
+		t.Errorf("permissions = %v", enc["permissions"])
+	}
+	if pdf["accessibility"] != "basic" {
+		t.Errorf("accessibility = %v", pdf["accessibility"])
+	}
+	if pdf["linearize"] != true {
+		t.Errorf("linearize = %v", pdf["linearize"])
+	}
+}
+
+func TestNoSignatureOrEncryptionWhenUnset(t *testing.T) {
+	c := NewClient("http://localhost:3000")
+	r := c.RenderHTML("<h1>Plain</h1>").
+		PdfTitle("Simple")
+
+	p := r.buildPayload()
+	pdf, ok := p["pdf"].(map[string]any)
+	if !ok {
+		t.Fatal("pdf not present")
+	}
+	if _, ok := pdf["signature"]; ok {
+		t.Error("signature should not be present")
+	}
+	if _, ok := pdf["encryption"]; ok {
+		t.Error("encryption should not be present")
+	}
+	if _, ok := pdf["mode"]; ok {
+		t.Error("mode should not be present")
+	}
+	if _, ok := pdf["accessibility"]; ok {
+		t.Error("accessibility should not be present")
+	}
+	if _, ok := pdf["linearize"]; ok {
+		t.Error("linearize should not be present")
+	}
+}
+
+func TestPdfModeOnlyTriggersPdf(t *testing.T) {
+	c := NewClient("http://localhost:3000")
+	r := c.RenderHTML("<p>test</p>").
+		PdfMode(PdfModeAuto)
+
+	p := r.buildPayload()
+	pdf, ok := p["pdf"].(map[string]any)
+	if !ok {
+		t.Fatal("pdf should be present when mode is set")
+	}
+	if pdf["mode"] != "auto" {
+		t.Errorf("mode = %v", pdf["mode"])
+	}
+	if _, ok := pdf["title"]; ok {
+		t.Error("title should not be present")
+	}
+}

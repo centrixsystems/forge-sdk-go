@@ -113,6 +113,24 @@ type BarcodeConfig struct {
 	Pages      *string        `json:"pages,omitempty"`
 }
 
+// PdfMode specifies the PDF rendering mode.
+type PdfMode string
+
+const (
+	PdfModeAuto   PdfMode = "auto"
+	PdfModeVector PdfMode = "vector"
+	PdfModeRaster PdfMode = "raster"
+)
+
+// AccessibilityLevel specifies the PDF accessibility compliance level.
+type AccessibilityLevel string
+
+const (
+	AccessibilityNone   AccessibilityLevel = "none"
+	AccessibilityBasic  AccessibilityLevel = "basic"
+	AccessibilityPdfUa1 AccessibilityLevel = "pdf/ua-1"
+)
+
 // Palette specifies a built-in color palette preset.
 type Palette string
 
