@@ -128,6 +128,7 @@ type RenderRequest struct {
 	pdfPermissions       *string
 	pdfAccessibility     *string
 	pdfLinearize         *bool
+	pdfLang              *string
 }
 
 // Format sets the output format (default: "pdf").
@@ -417,6 +418,12 @@ func (r *RenderRequest) PdfLinearize(enabled bool) *RenderRequest {
 	return r
 }
 
+// PdfLang sets the document language as a BCP 47 tag (e.g. "en-US"). Required for PDF/UA-1.
+func (r *RenderRequest) PdfLang(lang string) *RenderRequest {
+	r.pdfLang = &lang
+	return r
+}
+
 // buildPayload builds the JSON payload map.
 func (r *RenderRequest) buildPayload() map[string]any {
 	p := map[string]any{}
@@ -494,7 +501,7 @@ func (r *RenderRequest) buildPayload() map[string]any {
 		r.pdfPageNumbers != nil || hasWatermark ||
 		r.pdfStandard != nil || len(r.pdfEmbeddedFiles) > 0 || len(r.pdfBarcodes) > 0 ||
 		r.pdfMode != nil || hasSignature || hasEncryption || r.pdfAccessibility != nil ||
-		r.pdfLinearize != nil {
+		r.pdfLinearize != nil || r.pdfLang != nil {
 		pdf := map[string]any{}
 		if r.pdfTitle != nil {
 			pdf["title"] = *r.pdfTitle
@@ -652,6 +659,9 @@ func (r *RenderRequest) buildPayload() map[string]any {
 		}
 		if r.pdfLinearize != nil {
 			pdf["linearize"] = *r.pdfLinearize
+		}
+		if r.pdfLang != nil {
+			pdf["document_lang"] = *r.pdfLang
 		}
 		p["pdf"] = pdf
 	}

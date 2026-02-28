@@ -250,6 +250,7 @@ All methods return `*RenderRequest` for chaining. Call `.Send(ctx)` to execute.
 | `PdfPermissions` | `string` | PDF permission flags (comma-separated, e.g. `"print,copy"`) |
 | `PdfAccessibility` | `AccessibilityLevel` | Accessibility level: `AccessibilityNone`, `AccessibilityBasic`, `AccessibilityPdfUa1` |
 | `PdfLinearize` | `bool` | Enable PDF linearization (fast web view) |
+| `PdfLang` | `string` | Document language (BCP 47 tag, e.g. `"en-US"`). Required for PDF/UA-1 |
 
 | Terminal Method | Returns | Description |
 |-----------------|---------|-------------|
