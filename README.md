@@ -267,7 +267,7 @@ All methods return `*RenderRequest` for chaining. Call `.Send(ctx)` to execute.
 | `Palette` | `PaletteAuto`, `PaletteBlackWhite`, `PaletteGrayscale`, `PaletteEink` |
 | `WatermarkLayer` | `WatermarkOver`, `WatermarkUnder` |
 | `PdfStandard` | `PdfStandardNone`, `PdfStandardA2B`, `PdfStandardA3B` |
-| `BarcodeType` | `BarcodeQR`, `BarcodeCode128`, `BarcodeEAN13`, `BarcodeUPCA`, `BarcodeCode39` |
+| `BarcodeType` | `BarcodeQR`, `BarcodeDataMatrix`, `BarcodePDF417`, `BarcodeAztec`, `BarcodeCode128`, `BarcodeEAN13`, `BarcodeEAN8`, `BarcodeUPCA`, `BarcodeCode39`, `BarcodeCode93`, `BarcodeCodabar`, `BarcodeITF`, `BarcodeCode11` |
 | `BarcodeAnchor` | `AnchorTopLeft`, `AnchorTopRight`, `AnchorBottomLeft`, `AnchorBottomRight` |
 | `EmbedRelationship` | `EmbedRelationshipAlternative`, `EmbedRelationshipSupplement`, `EmbedRelationshipData`, `EmbedRelationshipSource`, `EmbedRelationshipUnspecified` |
 | `PdfMode` | `PdfModeAuto`, `PdfModeVector`, `PdfModeRaster` |

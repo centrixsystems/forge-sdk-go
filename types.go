@@ -81,11 +81,21 @@ type EmbeddedFile struct {
 type BarcodeType string
 
 const (
-	BarcodeQR      BarcodeType = "qr"
+	// 2D types
+	BarcodeQR         BarcodeType = "qr"
+	BarcodeDataMatrix BarcodeType = "datamatrix"
+	BarcodePDF417     BarcodeType = "pdf417"
+	BarcodeAztec      BarcodeType = "aztec"
+	// 1D types
 	BarcodeCode128 BarcodeType = "code128"
 	BarcodeEAN13   BarcodeType = "ean13"
+	BarcodeEAN8    BarcodeType = "ean8"
 	BarcodeUPCA    BarcodeType = "upca"
 	BarcodeCode39  BarcodeType = "code39"
+	BarcodeCode93  BarcodeType = "code93"
+	BarcodeCodabar BarcodeType = "codabar"
+	BarcodeITF     BarcodeType = "itf"
+	BarcodeCode11  BarcodeType = "code11"
 )
 
 // BarcodeAnchor specifies the corner anchor for barcode positioning.
