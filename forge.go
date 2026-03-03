@@ -715,3 +715,54 @@ func (r *RenderRequest) Send(ctx context.Context) ([]byte, error) {
 
 	return data, nil
 }
+
+// SendWithWarnings sends the render request and returns the full response including warnings.
+// Warnings are CSS compatibility notices emitted by the Forge server as X-Forge-Warning headers.
+func (r *RenderRequest) SendWithWarnings(ctx context.Context) (*RenderResponse, error) {
+	payload := r.buildPayload()
+
+	body, err := json.Marshal(payload)
+	if err != nil {
+		return nil, fmt.Errorf("forge: marshal error: %w", err)
+	}
+
+	req, err := http.NewRequestWithContext(
+		ctx, http.MethodPost,
+		r.client.baseURL+"/render",
+		bytes.NewReader(body),
+	)
+	if err != nil {
+		return nil, fmt.Errorf("forge: request error: %w", err)
+	}
+	req.Header.Set("Content-Type", "application/json")
+
+	resp, err := r.client.httpClient.Do(req)
+	if err != nil {
+		return nil, &ConnectionError{Cause: err}
+	}
+	defer resp.Body.Close()
+
+	data, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, fmt.Errorf("forge: read body: %w", err)
+	}
+
+	if resp.StatusCode != http.StatusOK {
+		var errResp struct {
+			Error string `json:"error"`
+		}
+		msg := fmt.Sprintf("HTTP %d", resp.StatusCode)
+		if json.Unmarshal(data, &errResp) == nil && errResp.Error != "" {
+			msg = errResp.Error
+		}
+		return nil, &ServerError{
+			StatusCode: resp.StatusCode,
+			Message:    msg,
+		}
+	}
+
+	return &RenderResponse{
+		Data:     data,
+		Warnings: resp.Header.Values("X-Forge-Warning"),
+	}, nil
+}

@@ -141,6 +141,14 @@ const (
 	AccessibilityPdfUa1 AccessibilityLevel = "pdf/ua-1"
 )
 
+// RenderResponse contains the rendered output and any CSS compatibility warnings.
+type RenderResponse struct {
+	// Data is the rendered output bytes (PDF, PNG, etc.).
+	Data []byte
+	// Warnings contains CSS compatibility warnings from the Forge server.
+	Warnings []string
+}
+
 // Palette specifies a built-in color palette preset.
 type Palette string
 
